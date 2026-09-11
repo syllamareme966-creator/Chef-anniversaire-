@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Un petit quiz pour toi, Chef</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Marcellus&display=swap');
+
+  :root{
+    --gold:#c9284a;
+    --gold-soft:#f2a6b8;
+    --wine:#7a0f24;
+    --cream:#fbe9ec;
+    --night:#1a0508;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    height:100%;
+    background:
+      radial-gradient(ellipse at 50% 0%, #4a0d1c 0%, var(--night) 55%, #0d0304 100%);
+    font-family:'Cormorant Garamond', serif;
+    color:var(--cream);
+    overflow-x:hidden;
+  }
+
+  .stars{position:fixed; inset:0; z-index:0; pointer-events:none;}
+  .stars span{
+    position:absolute; width:2px; height:2px;
+    background:var(--gold-soft); border-radius:50%;
+    opacity:.5; animation:twinkle 3.5s ease-in-out infinite;
+  }
+  @keyframes twinkle{0%,100%{opacity:.15;} 50%{opacity:.8;}}
+
+  .stage{
+    position:relative; z-index:2;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding:8vh 6vw;
+  }
+
+  .card{ max-width:560px; width:100%; text-align:center; }
+
+  .eyebrow{
+    font-family:'Marcellus', serif;
+    letter-spacing:0.3em;
+    font-size:0.8rem;
+    color:var(--gold-soft);
+    opacity:.75;
+    margin-bottom:1.2rem;
+  }
+
+  .progress{
+    display:flex; gap:0.4rem; justify-content:center;
+    margin-bottom:2.4rem;
+  }
+  .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:rgba(199,154,75,0.25);
+    transition:background .3s ease;
+  }
+  .dot.done{ background:var(--gold); }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; animation:riseIn 0.9s ease forwards; }
+
+  @keyframes riseIn{
+    from{opacity:0; transform:translateY(16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  h1{
+    font-family:'Marcellus', serif;
+    font-weight:400;
+    font-size:clamp(1.6rem, 6vw, 2.4rem);
+    line-height:1.3;
+    color:var(--cream);
+    margin-bottom:2.6rem;
+  }
+  h1 em{ font-style:italic; color:var(--gold); }
+
+  .options{ display:flex; gap:1.2rem; justify-content:center; flex-wrap:wrap; }
+
+  .opt{
+    font-family:'Marcellus', serif;
+    font-size:1.05rem;
+    letter-spacing:0.04em;
+    background:transparent;
+    border:1px solid var(--gold);
+    color:var(--gold-soft);
+    padding:0.9em 2.2em;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .35s ease, color .35s ease, box-shadow .35s ease, transform .2s ease;
+  }
+  .opt:hover{
+    background:var(--gold); color:var(--night);
+    box-shadow:0 0 25px rgba(199,154,75,.4);
+    transform:translateY(-2px);
+  }
+  .opt:focus-visible{ outline:2px solid var(--gold-soft); outline-offset:3px; }
+
+  .result-icon{ font-size:2.8rem; margin-bottom:1.1rem; }
+  .result-text{
+    font-family:'Marcellus', serif;
+    font-size:clamp(1.4rem, 5.2vw, 2rem);
+    line-height:1.4;
+    color:var(--gold);
+    margin-bottom:0.9rem;
+  }
+  .result-sub{
+    font-size:clamp(1.02rem, 2.8vw, 1.2rem);
+    color:var(--gold-soft);
+    font-style:italic;
+    margin-bottom:2.2rem;
+  }
+
+  .again{
+    font-family:'Marcellus', serif;
+    font-size:0.85rem;
+    letter-spacing:0.1em;
+    background:none; border:none;
+    color:rgba(232,207,157,0.5);
+    text-decoration:underline;
+    cursor:pointer;
+  }
+
+  .years-num{
+    font-family:'Marcellus', serif;
+    font-size:clamp(5rem, 22vw, 9rem);
+    line-height:1;
+    color:var(--gold);
+    text-shadow:0 0 40px rgba(199,154,75,0.35);
+  }
+  .years-label{
+    font-family:'Marcellus', serif;
+    letter-spacing:0.25em;
+    font-size:clamp(0.8rem, 2.4vw, 1rem);
+    color:var(--gold-soft);
+    margin-top:0.6em;
+    text-transform:lowercase;
+  }
+  .divider{
+    width:56px; height:1px;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin:2.2rem auto;
+  }
+  .years-msg{
+    font-size:clamp(1.1rem, 3.2vw, 1.35rem);
+    line-height:1.75;
+    color:#f1e4cf;
+    max-width:460px;
+    margin:0 auto;
+  }
+  .years-msg strong{ color:var(--gold); font-weight:600; }
+
+  .next-btn{
+    margin-top:2.6rem;
+    font-family:'Marcellus', serif;
+    letter-spacing:0.1em;
+    font-size:0.9rem;
+    background:transparent;
+    border:1px solid var(--gold);
+    color:var(--gold-soft);
+    padding:0.85em 2.2em;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .35s ease, color .35s ease;
+  }
+  .next-btn:hover{ background:var(--gold); color:var(--night); }
+
+  .music-controls{
+    margin-top:2.6rem;
+    display:flex;
+    justify-content:center;
+  }
+  #soundBtn{
+    font-family:'Marcellus', serif;
+    letter-spacing:0.12em;
+    font-size:0.8rem;
+    background:transparent;
+    border:1px solid var(--gold);
+    color:var(--gold-soft);
+    padding:0.75em 1.7em;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
+  }
+  #soundBtn:hover{
+    background:var(--gold);
+    color:var(--night);
+    box-shadow:0 0 25px rgba(201,40,74,0.4);
+  }
+  #soundBtn:focus-visible{
+    outline:2px solid var(--gold-soft);
+    outline-offset:3px;
+  }
+
+  .confetti{
+    position:fixed; top:-10px; z-index:5;
+    width:8px; height:14px; opacity:0.9; pointer-events:none;
+    animation-name:fall; animation-timing-function:linear; animation-iteration-count:infinite;
+  }
+  @keyframes fall{
+    0%{transform:translateY(-10vh) rotate(0deg); opacity:1;}
+    100%{transform:translateY(110vh) rotate(540deg); opacity:0.85;}
+  }
+
+  .heart{
+    position:fixed; z-index:5; pointer-events:none;
+    font-size:1.4rem; opacity:0.9;
+    animation-name:floatUp; animation-timing-function:ease-in;
+    animation-iteration-count:1;
+  }
+  @keyframes floatUp{
+    0%{transform:translateY(0) scale(0.6); opacity:0;}
+    15%{opacity:1;}
+    100%{transform:translateY(-90vh) scale(1.1); opacity:0;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .screen.active{ animation:none; }
+    .confetti,.heart{ display:none; }
+    .stars span{ animation:none; opacity:.4; }
+  }
+
+  footer{
+    position:fixed; bottom:0; left:0; right:0; z-index:2;
+    text-align:center; padding-bottom:2.2rem;
+    font-family:'Marcellus', serif; font-size:0.72rem;
+    letter-spacing:0.2em; color:rgba(232,207,157,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="stage">
+  <div class="card">
+
+    <div class="progress" id="progress">
+      <div class="dot" data-q="1"></div>
+      <div class="dot" data-q="2"></div>
+      <div class="dot" data-q="3"></div>
+      <div class="dot" data-q="4"></div>
+      <div class="dot" data-q="5"></div>
+      <div class="dot" data-q="6"></div>
+    </div>
+
+    <!-- Q1 -->
+    <div class="screen active" id="q1">
+      <div class="eyebrow">question 1 sur 6</div>
+      <h1>Chef, est-ce que tu <em>m'aimes</em> ?</h1>
+      <div class="options">
+        <button class="opt q1-oui" type="button">Oui</button>
+        <button class="opt q1-non" type="button">Non</button>
+      </div>
+    </div>
+
+    <div class="screen" id="q1-oui-r">
+      <div class="result-icon">💛</div>
+      <div class="result-text">Je savais que tu m'aimais<br>de tout ton cœur.</div>
+      <div class="result-sub">Bonne réponse, Chef.</div>
+      <button class="next-btn go-q2" type="button">question suivante →</button>
+    </div>
+
+    <div class="screen" id="q1-non-r">
+      <div class="result-icon">😏</div>
+      <div class="result-text">Arrête de mentir.<br>Tu ne peux pas vivre sans moi.</div>
+      <div class="result-sub">On le sait tous les deux, Chef.</div>
+      <button class="again retry-q1" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q2" type="button">continuer quand même →</button>
+    </div>
+
+    <!-- Q2 -->
+    <div class="screen" id="q2">
+      <div class="eyebrow">question 2 sur 6</div>
+      <h1>Qui est la plus belle femme<br>de ta vie ?</h1>
+      <div class="options">
+        <button class="opt q2-touty" type="button">Néné Touty</button>
+        <button class="opt q2-autre" type="button">Une autre</button>
+      </div>
+    </div>
+
+    <div class="screen" id="q2-touty-r">
+      <div class="result-icon">👑</div>
+      <div class="result-text">Évidemment.<br>Il n'y avait qu'une seule bonne réponse.</div>
+      <div class="result-sub">Ta Néné Touty, pour toujours.</div>
+      <button class="next-btn go-q3" type="button">question suivante →</button>
+    </div>
+
+    <div class="screen" id="q2-autre-r">
+      <div class="result-icon">🚩</div>
+      <div class="result-text">Réessaie, Chef.<br>Je vais faire semblant de ne rien avoir vu.</div>
+      <div class="result-sub">La bonne réponse était juste devant toi.</div>
+      <button class="again retry-q2" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q3" type="button">continuer quand même →</button>
+    </div>
+
+    <!-- Q3 -->
+    <div class="screen" id="q3">
+      <div class="eyebrow">question 3 sur 6</div>
+      <h1>Tu peux vivre sans<br>Néné Touty ?</h1>
+      <div class="options">
+        <button class="opt q3-non" type="button">Non, jamais</button>
+        <button class="opt q3-oui" type="button">Oui</button>
+      </div>
+    </div>
+
+    <div class="screen" id="q3-non-r">
+      <div class="result-icon">🥹</div>
+      <div class="result-text">Bien joué, Chef.<br>C'était la seule vraie réponse.</div>
+      <div class="result-sub">Elle non plus ne peut pas vivre sans toi.</div>
+      <button class="next-btn go-q4" type="button">dernière question →</button>
+    </div>
+
+    <div class="screen" id="q3-oui-r">
+      <div class="result-icon">🙄</div>
+      <div class="result-text">Menteur.<br>On a déjà réglé ça à la question 1.</div>
+      <div class="result-sub">Essaie encore, Chef.</div>
+      <button class="again retry-q3" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q4" type="button">continuer quand même →</button>
+    </div>
+
+    <!-- Q4 -->
+    <div class="screen" id="q4">
+      <div class="eyebrow">question 4 sur 6</div>
+      <h1>Depuis combien d'années<br>Néné Touty te supporte ?</h1>
+      <div class="options">
+        <button class="opt q4-opt" data-r="q4-1-r" type="button">1 an</button>
+        <button class="opt q4-opt" data-r="q4-2-r" type="button">2 ans</button>
+        <button class="opt q4-opt" data-r="q4-4-r" type="button">4 ans</button>
+        <button class="opt q4-opt" data-r="q4-six" type="button">6 ans</button>
+        <button class="opt q4-opt" data-r="q4-8-r" type="button">8 ans</button>
+        <button class="opt q4-opt" data-r="q4-10-r" type="button">10 ans</button>
+      </div>
+    </div>
+
+    <div class="screen" id="q4-1-r">
+      <div class="result-icon">🤨</div>
+      <div class="result-text">Vraiment, Chef ?<br>1 an, tu n'y es pas du tout.</div>
+      <div class="result-sub">Retourne compter.</div>
+      <button class="again retry-q4" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q5" type="button">continuer quand même →</button>
+    </div>
+
+    <div class="screen" id="q4-2-r">
+      <div class="result-icon">🤨</div>
+      <div class="result-text">Non, Chef.<br>C'est bien plus que ça.</div>
+      <div class="result-sub">Néné Touty est patiente, mais quand même.</div>
+      <button class="again retry-q4" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q5" type="button">continuer quand même →</button>
+    </div>
+
+    <div class="screen" id="q4-4-r">
+      <div class="result-icon">🤨</div>
+      <div class="result-text">Presque, Chef.<br>Mais compte encore un peu.</div>
+      <div class="result-sub">Elle tient les comptes, elle.</div>
+      <button class="again retry-q4" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q5" type="button">continuer quand même →</button>
+    </div>
+
+    <div class="screen" id="q4-8-r">
+      <div class="result-icon">🤨</div>
+      <div class="result-text">Non, Chef.<br>Tu as pris trop d'avance.</div>
+      <div class="result-sub">C'est flatteur, mais faux.</div>
+      <button class="again retry-q4" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q5" type="button">continuer quand même →</button>
+    </div>
+
+    <div class="screen" id="q4-10-r">
+      <div class="result-icon">🤨</div>
+      <div class="result-text">On n'est pas encore là, Chef.<br>Mais on y va.</div>
+      <div class="result-sub">Patience, ça viendra.</div>
+      <button class="again retry-q4" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q5" type="button">continuer quand même →</button>
+    </div>
+
+    <div class="screen" id="q4-six">
+      <div class="result-icon">💫</div>
+      <div class="result-text">Exactement, Chef.</div>
+      <div class="result-sub">6 ans, et toujours partante pour plus.</div>
+      <button class="next-btn go-q5" type="button">question suivante →</button>
+    </div>
+
+    <!-- Q5 -->
+    <div class="screen" id="q5">
+      <div class="eyebrow">question 5 sur 6</div>
+      <h1>Qui prépare le meilleur<br>plat pour toi ?</h1>
+      <div class="options">
+        <button class="opt q5-touty" type="button">Néné Touty</button>
+        <button class="opt q5-autre" type="button">Une autre personne</button>
+      </div>
+    </div>
+
+    <div class="screen" id="q5-touty-r">
+      <div class="result-icon">🍲</div>
+      <div class="result-text">Bien sûr, Chef.<br>Personne d'autre ne cuisine avec autant d'amour.</div>
+      <div class="result-sub">Elle garde même les meilleures parts pour toi.</div>
+      <button class="next-btn go-q6" type="button">dernière question →</button>
+    </div>
+
+    <div class="screen" id="q5-autre-r">
+      <div class="result-icon">🚩</div>
+      <div class="result-text">Attention à ce que tu réponds, Chef.<br>Néné Touty a de la mémoire.</div>
+      <div class="result-sub">Réfléchis bien avant de répondre.</div>
+      <button class="again retry-q5" type="button">recommencer cette question</button>
+      <br><br>
+      <button class="next-btn go-q6" type="button">continuer quand même →</button>
+    </div>
+
+    <!-- Q6 -->
+    <div class="screen" id="q6">
+      <div class="eyebrow">question 6 sur 6 — dernière</div>
+      <h1>Tu promets de fêter tous tes<br>anniversaires avec Néné Touty ?</h1>
+      <div class="options">
+        <button class="opt q6-oui" type="button">Je le promets</button>
+        <button class="opt q6-non" type="button">On verra</button>
+      </div>
+    </div>
+
+    <div class="screen" id="q6-r">
+      <div class="result-icon">💍</div>
+      <div class="result-text">C'est noté, Chef.<br>Aucune sortie de secours possible.</div>
+      <div class="result-sub">Tous les 12 septembre, elle sera là.</div>
+      <button class="next-btn go-years" type="button">voir le résultat final →</button>
+    </div>
+
+    <!-- Final -->
+    <div class="screen" id="screen-years">
+      <div class="eyebrow">aujourd'hui, c'est ton jour, Chef</div>
+      <div class="years-num">23</div>
+      <div class="years-label">bougies pour toi aujourd'hui</div>
+      <div class="divider"></div>
+      <p class="years-msg">
+        Joyeux anniversaire, Chef.<br>
+        Que cette nouvelle année t'apporte tout ce que tu mérites —
+        et que Néné Touty soit là pour la célébrer avec toi,
+        aujourd'hui comme toutes les années à venir.
+      </p>
+    </div>
+
+    <div class="music-controls">
+      <button id="soundBtn" type="button" aria-pressed="false">♪ musique</button>
+    </div>
+
+  </div>
+</div>
+
+<footer>JOYEUX ANNIVERSAIRE &nbsp;·&nbsp; CHEF &nbsp;·&nbsp; 23 ANS</footer>
+
+<script>
+  const starsContainer = document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s = document.createElement('span');
+    s.style.left = Math.random()*100 + 'vw';
+    s.style.top = Math.random()*100 + 'vh';
+    s.style.animationDelay = (Math.random()*3.5) + 's';
+    starsContainer.appendChild(s);
+  }
+
+  const goldTones = ['#c79a4b','#e8cf9d','#7a2e3a','#f1e4cf'];
+  function launchConfetti(count){
+    for(let i=0;i<count;i++){
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random()*100 + 'vw';
+      c.style.background = goldTones[Math.floor(Math.random()*goldTones.length)];
+      c.style.animationDuration = (3 + Math.random()*3) + 's';
+      c.style.animationDelay = (Math.random()*1.2) + 's';
+      c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      document.body.appendChild(c);
+      setTimeout(()=>c.remove(), 9000);
+    }
+  }
+
+  function launchHearts(count){
+    const hearts = ['💛','💛','💫'];
+    for(let i=0;i<count;i++){
+      const h = document.createElement('div');
+      h.className = 'heart';
+      h.textContent = hearts[Math.floor(Math.random()*hearts.length)];
+      h.style.left = (20 + Math.random()*60) + 'vw';
+      h.style.bottom = '0px';
+      h.style.animationDuration = (2.4 + Math.random()*1.6) + 's';
+      h.style.animationDelay = (Math.random()*0.8) + 's';
+      document.body.appendChild(h);
+      setTimeout(()=>h.remove(), 5000);
+    }
+  }
+
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function setProgress(n){
+    document.querySelectorAll('.dot').forEach(d=>{
+      d.classList.toggle('done', parseInt(d.dataset.q) <= n);
+    });
+  }
+
+  // Q1
+  document.querySelector('.q1-oui').addEventListener('click', ()=>{
+    showScreen('q1-oui-r'); launchConfetti(50); launchHearts(12);
+  });
+  document.querySelector('.q1-non').addEventListener('click', ()=>{
+    showScreen('q1-non-r');
+  });
+  document.querySelector('.retry-q1').addEventListener('click', ()=> showScreen('q1'));
+  document.querySelectorAll('.go-q2').forEach(b=> b.addEventListener('click', ()=>{
+    setProgress(2); showScreen('q2');
+  }));
+
+  // Q2
+  document.querySelector('.q2-touty').addEventListener('click', ()=>{
+    showScreen('q2-touty-r'); launchConfetti(50); launchHearts(12);
+  });
+  document.querySelector('.q2-autre').addEventListener('click', ()=>{
+    showScreen('q2-autre-r');
+  });
+  document.querySelector('.retry-q2').addEventListener('click', ()=> showScreen('q2'));
+  document.querySelectorAll('.go-q3').forEach(b=> b.addEventListener('click', ()=>{
+    setProgress(3); showScreen('q3');
+  }));
+
+  // Q3
+  document.querySelector('.q3-non').addEventListener('click', ()=>{
+    showScreen('q3-non-r'); launchConfetti(50); launchHearts(12);
+  });
+  document.querySelector('.q3-oui').addEventListener('click', ()=>{
+    showScreen('q3-oui-r');
+  });
+  document.querySelector('.retry-q3').addEventListener('click', ()=> showScreen('q3'));
+  document.querySelectorAll('.go-q4').forEach(b=> b.addEventListener('click', ()=>{
+    setProgress(4); showScreen('q4');
+  }));
+
+  // Q4
+  document.querySelectorAll('.q4-opt').forEach(b=> b.addEventListener('click', ()=>{
+    const target = b.dataset.r;
+    showScreen(target);
+    if(target === 'q4-six'){ launchConfetti(50); launchHearts(12); }
+  }));
+  document.querySelectorAll('.retry-q4').forEach(b=> b.addEventListener('click', ()=> showScreen('q4')));
+  document.querySelectorAll('.go-q5').forEach(b=> b.addEventListener('click', ()=>{
+    setProgress(5); showScreen('q5');
+  }));
+
+  // Q5
+  document.querySelector('.q5-touty').addEventListener('click', ()=>{
+    showScreen('q5-touty-r'); launchConfetti(50); launchHearts(12);
+  });
+  document.querySelector('.q5-autre').addEventListener('click', ()=>{
+    showScreen('q5-autre-r');
+  });
+  document.querySelector('.retry-q5').addEventListener('click', ()=> showScreen('q5'));
+  document.querySelectorAll('.go-q6').forEach(b=> b.addEventListener('click', ()=>{
+    setProgress(6); showScreen('q6');
+  }));
+
+  // Q6
+  document.querySelector('.q6-oui').addEventListener('click', ()=>{
+    showScreen('q6-r'); launchConfetti(50); launchHearts(12);
+  });
+  document.querySelector('.q6-non').addEventListener('click', ()=>{
+    showScreen('q6-r'); launchConfetti(30);
+  });
+
+  document.querySelector('.go-years').addEventListener('click', ()=>{
+    showScreen('screen-years'); launchConfetti(60);
+  });
+
+  // --- musique romantique (mélodie douce, synthétisée, pas de fichier externe requis) ---
+  let audioCtx;
+  let playing = false;
+  const soundBtn = document.getElementById('soundBtn');
+
+  const notes = {
+    A3:220.00, B3:246.94, C4:261.63, D4:293.66, E4:329.63,
+    F4:349.23, G4:392.00, A4:440.00, B4:493.88, C5:523.25, D5:587.33, E5:659.25
+  };
+
+  // "Happy Birthday to You" - mélodie traditionnelle
+  const melody = [
+    ['C4',0.4],['C4',0.2],['D4',0.6],['C4',0.6],['F4',0.6],['E4',1.2],
+    ['C4',0.4],['C4',0.2],['D4',0.6],['C4',0.6],['G4',0.6],['F4',1.2],
+    ['C4',0.4],['C4',0.2],['C5',0.6],['A4',0.6],['F4',0.6],['E4',0.6],['D4',1.2],
+    ['A4',0.4],['A4',0.2],['G4',0.6],['F4',0.6],['G4',0.6],['F4',1.4],
+  ];
+
+  function playNote(freq, start, dur, gainPeak){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(gainPeak, start + dur*0.25);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + dur*0.95);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + dur);
+  }
+
+  function playMelody(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let t = audioCtx.currentTime + 0.15;
+    melody.forEach(([note, dur])=>{
+      playNote(notes[note], t, dur, 0.12);
+      // douce harmonie une octave en dessous, plus discrète
+      const lowNote = note.replace(/\d/, m => m); // même note
+      playNote(notes[note]/2, t, dur, 0.05);
+      t += dur * 0.62;
+    });
+    const total = melody.reduce((a,[,d])=>a+d*0.62,0)*1000;
+    setTimeout(()=>{ if(playing) playMelody(); }, total + 900);
+  }
+
+  soundBtn.addEventListener('click', ()=>{
+    playing = !playing;
+    soundBtn.setAttribute('aria-pressed', String(playing));
+    if(playing){
+      if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      playMelody();
+      soundBtn.textContent = '❚❚ pause';
+    } else {
+      soundBtn.textContent = '♪ musique';
+    }
+  });
+</script>
+
+</body>
+</html>
